@@ -1,0 +1,51 @@
+---
+title: "R Notebook"
+output:
+  word_document: default
+  html_notebook: default
+---
+#BIS 581
+##Paul Dunn
+###Missing Value imputation
+
+The code below uses random forests (covered later, don't worry about them for now) to fill in some missing values (na) in a data set.
+The iris dataset is built-in and has data about flowers in it. Feel free to look at the dataset and/or open the help file for it.
+
+```{r}
+data(iris)
+#let's get our own copy
+iris.na <- iris
+set.seed(111)
+## artificially drop some data values.
+for (i in 1:4) iris.na[sample(150, 20), i] <- NA
+
+#how many missing values do we have?
+summary(iris.na)
+View(iris)
+View(iris.na)
+
+```
+
+This shows us how many missing values we have, spread across the data set.
+Just for comparison's sake, let's look at an original value, the row where that value is missing and then the value our function (below) fills in
+```{r}
+iris[6,4]
+iris.na[6,4]
+```
+
+won't be perfect, but let's fill in the values with impute, randomforest
+```{r}
+library(randomForest)
+set.seed(222)
+iris.imputed <- rfImpute(Species ~ ., iris.na)
+View(iris.imputed)
+```
+OK, now let's compare values again
+```{r}
+iris[3,2]
+iris.na[3,2]
+iris.imputed[3,2]
+print(1-iris.imputed[3,2]/iris[3,2])
+```
+
+Not perfect by any means, but if we need all of the rows, it works. Take a look at the last line printed above. this is just one minus the ratio of the imputed value to the 'real' value. 

@@ -1,0 +1,70 @@
+---
+title: "BIS581"
+output:
+  word_document: default
+  html_notebook: default
+---
+The following uses the diamonds dataset from the GGPLOT2 library 
+
+```{r}
+library(ggplot2)
+mydiamonds <- diamonds
+```
+
+You can paste in a new "code chunk" by pressing CTRL- ALT - I
+so for each question listed below, put in a new code chunk to answer that question.
+Knit your notebook to Word and submit the word document AND the .RMD file on blackboard.
+
+How many records are in the dataset?
+```{r}
+nrow(mydiamonds)
+```
+
+What is the largest diamond by weight (carat)?
+```{r}
+max(mydiamonds$carat)
+```
+
+Most and least expensive?
+```{r}
+max(mydiamonds$price)
+min(mydiamonds$price)
+```
+
+Plot a bar chart of count of diamonds vs cut.
+```{r}
+cut_counts <- table(mydiamonds$cut)
+barplot(cut_counts,main = "Count of Diamonds by Cut",xlab = "Cut", ylab = "Count of Diamonds")
+```
+
+Let's explore the data a bit. What attributes does the most expensive diamond have? Change max(price) to min(price) to see the least expensive.
+```{r}
+subset(diamonds, price == max(price))
+subset(mydiamonds, price == min(price))
+```
+
+Create a plot of carat vs price.
+```{r}
+plot(mydiamonds$carat, mydiamonds$price, main = "Carat vs Price",xlab = "Carat",ylab = "Price")
+```
+
+
+Does it look like carat and price have a linear relationship?
+In the diamond dataset, there is a significant relationship between carat and price, with larger diamonds often costing more. A scatter plot of carat compared to price shows a rising trend, indicating that as the carat value grows, so does the price. However, the connection may not be completely linear because additional factors like as cut, clarity, and color influence the price. To further understand this link, we may employ techniques such as analysis of variance or linear regression.
+
+
+Create three other plots of other variables vs price. The point of exploratory analysis (know your data) is to do just that, explore. You might have to plot more than three to find variables that plot correctly. Please realize too that scatter plots (or line) are for continuous variables and not for categorical variables. See the ggplot2 intro for references. Please try to pick three variables that you think have a strong influence in the price of the diamond. The main point for this is to make a model later on.
+```{r}
+plot(mydiamonds$price ~ mydiamonds$cut,main = "Cut vs Price",xlab = "Cut",ylab = "Price",col = "green")
+```
+
+
+```{r}
+plot(mydiamonds$price ~ mydiamonds$color,main = "Color vs Price",xlab = "Color",ylab = "Price",col = "blue")
+```
+
+
+```{r}
+plot(mydiamonds$price ~ mydiamonds$clarity,main = "Clarity vs Price",xlab = "Clarity",ylab = "Price",col = "red")
+
+```

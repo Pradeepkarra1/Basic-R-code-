@@ -1,0 +1,113 @@
+---
+title: "R Notebook"
+output:
+  word_document: default
+  html_notebook: default
+---
+BIS581
+This assignment will look at some stock market data. Answer each question, provide your r code also. 
+You will need to edit the line below to point it at where you saved the CSV file
+
+```{r}
+my_stocks <- read.csv("stocks.csv",header=TRUE, stringsAsFactors = FALSE)
+```
+
+Your job first, is to 'know your data'. Run whatever code you feel necessary to get to know your data. Add more code blocks as needed, leave this part in your document when you submit it.
+
+```{r}
+str(my_stocks)
+
+```
+
+For the questions below, show both the code used to answer along with text that shows the answer: 
+
+How many different stocks are there (by stock symbol) (5)?
+```{r}
+# Get unique stock symbols
+unique_stocks <- unique(my_stocks$stock_symbol)
+
+# Count how many unique stock symbols there are
+num_unique_stocks <- length(unique_stocks)
+
+#  result
+num_unique_stocks
+```
+
+What are those stocks (5)?
+```{r}
+# Get unique stock symbols
+unique_stocks <- unique(my_stocks$stock_symbol)
+
+# results
+unique_stocks
+```
+
+Which stock had the highest single gain in a day, which day was it (10)?
+```{r}
+my_stocks$daily_gain <- my_stocks$stock_price_close - my_stocks$stock_price_open
+
+# Find the stock with the maximum daily gain
+max_gain_row <- my_stocks[which.max(my_stocks$daily_gain), ]
+
+# result
+max_gain_row$stock_symbol
+max_gain_row$date
+max_gain_row$daily_gain
+```
+
+Which stock had the highest single loss in a day, which day was it (10)?
+```{r}
+# Calculate daily gain
+my_stocks$daily_gain <- my_stocks$stock_price_close - my_stocks$stock_price_open
+
+# Find the stock with the largest single loss (minimum daily gain)
+min_loss_row <-my_stocks[which.min(my_stocks$daily_gain), ]
+
+#  result
+min_loss_row$stock_symbol
+min_loss_row$date
+min_loss_row$daily_gain
+```
+
+Create a plot of closing price for XOM over time (5)
+```{r}
+# Convert date column to Date type
+my_stocks$date <- as.Date(my_stocks$date)
+
+# Filter the data for XOM stock symbol
+xom_data <- subset(my_stocks, stock_symbol == "XOM")
+
+# Plot closing price over time
+plot(xom_data$date, xom_data$stock_price_close, type = "l", col = "blue", 
+     main = "XOM Closing Price Over Time", xlab = "Date", ylab = "Closing Price")
+```
+
+Create a plot of closing price for XKK over time (5)
+```{r}
+# Convert date column to Date type
+my_stocks$date <- as.Date(my_stocks$date)
+
+# Filter the data for XKK stock symbol
+xkk_data <- subset(my_stocks, stock_symbol == "XKK")
+
+# Plot closing price over time
+plot(xkk_data$date, xkk_data$stock_price_close, type = "l", col = "red", 
+     main = "XKK Closing Price Over Time", xlab = "Date", ylab = "Closing Price")
+
+```
+
+Create a plot of the change in price per day for both XOM and XKK (10)
+```{r}
+# Calculate daily price change
+my_stocks$daily_change <- my_stocks$stock_price_close - my_stocks$stock_price_open
+
+# Filter data for XOM and XKK
+xom_data <- subset(my_stocks, stock_symbol == "XOM")
+xkk_data <- subset(my_stocks, stock_symbol == "XKK")
+
+# Plot for XOM
+plot(xom_data$date, xom_data$daily_change, type = "l", col = "blue", ylim = range(my_stocks$daily_change),
+     main = "Daily Price Change for XOM and XKK", xlab = "Date", ylab = "Daily Change")
+
+```
+

@@ -1,0 +1,249 @@
+---
+title: "Data Wrangling"
+author: "Paul Dunn"
+date: "December, 2018"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Business Information Systems
+## Central Michigan University
+
+##Getting started with Data Wrangling in R
+
+Data can be in a multitude of formats and part of our job will be to change it to a format needed for analysis. Officially this is the Transform part of ETL (Extract, Transform, Load).
+This is also called Data Wrangling.
+In R, we are going to use a library called dplyr which is part of the tidyverse. The EDAWR library just contains some small datasets we can use to learn.
+
+```{r warning=FALSE, message=FALSE}
+#Uncomment to install or comment these 3 lines out to knit
+#install.packages("devtools")
+#devtools::install_github("rstudio/EDAWR")
+
+library(tidyr)
+library(dplyr)
+library(EDAWR)
+
+```
+
+## Forms of data
+Data can be in many different forms. It can be in rows and columns:
+
+
+```{r echo=FALSE}
+storms
+```
+
+Or it can be like this
+```{r echo=FALSE}
+cases
+```
+
+Or like this:
+```{r echo=FALSE}
+pollution
+```
+
+The problem is that data, however useful, is generally never in the form we need. If the above is the structure of relational database table, this is how the data will come out from a query. 
+During the ETL phase we first *E*xtract it from the DB, then we can *T*ransform it. We transform it to whatever spec we need for analysis. This could be Tidy data in R or it could be pivot tables in Excel or what-have-you.
+The tools that you use for this part are irrelevant. Use what you have and use the tool closest to the data. That is to say, if you have the data in Hadoop, don't download it, wrangle it in Python, then re-upload it. If you can do the work where the data lives (for large data sets) it will save time. In the specific case of Hadoop, there are many tools you can use: map-reduce with java, python, R (sparklyr), Hive and Pig to name a few.
+Generally we want our data in rows with variables in columns (like the first example.) The second set above we could transform:
+
+```{r echo=FALSE}
+cases
+gather(cases,"year","count",2:4)
+```
+
+If you are familiar with Excel, you might recognize this as a pivot. Or, if this data were in MSSQL, you could pivot the data in a select statement:
+
+`select daystomanufacture, avg(standardcost) as AverageCost from product group by daystomanufacture;` 
+
+then becomes:
+
+
+
+`select 'AverageCost' as cost_sorted_by_day, [0],[1],[2],[3],[4] from (select daystomanufacture, standardcost from product as sourcetable 
+PIVOT  (avg(standardcost) for daystomanufacture IN [0],[1],[2],[3],[4]))
+as PivotTable;`
+
+whew! But what do we do if we are using an RDBMS other than MSSQL, like MySQL? Or what if our data is in a text file (csv) or some other format?
+We can use R quite easily:
+
+To accomplish this with our data above, it is just one line:
+
+```{r}
+storms
+gather(cases,"year","count",2:4)
+```
+
+Gather() as shown above will collapse multiple columns into 2 columns.
+In that call, `cases` is the dataset against which we want the call to work, "year" is the name of the new key column, "count" is the new value column, and 2:4 are which columns we want. We can even connect R directly to MySQL and get the data, we'll go over how to do this later.
+
+Spread(), on the other hand, is what we need to fix up the last table of data shown above. The problem with that table is that it really should be multiple columns (one for small particulate and its count, and one for large particulate and its count both listed for each city.)
+
+```{r}
+storms
+spread(pollution, size, amount)
+```
+
+As you can see, manipulating data in R using DPLYR is quite simple.
+
+Let's look at a few other functions we can use:
+separate() will split a single column into multiples based on a given separator. this is good for splitting a date into day, month and year
+```{r}
+storms
+storms2<-separate(storms,date,c("year","month","day"))
+storms3<-unite(storms2,combodate,year,month,day,sep = "/")
+```
+
+Unite() is the opposite of separate() and will combine multiple columns down to a single column.
+
+Now let's go over some ways to access different parts of our data. We have 4 topics to cover:
+* Extract existing variables: select()
+* Extract existing observations: filter()
+* Derive new variables (from existing): mutate()
+* Change unit of analysis: summarise() *note different spelling*
+
+Let's start with select(). This is what we use when we only want certain columns of our data, but all rows.
+```{r}
+storms
+select(storms, storm,date)
+```
+Read the R statement above as: select storm and date from storms.
+
+If we only want storms where the wind speed was above 60, then we need to use filter(). This is because we are now changing which rows we want, not just which columns.
+```{r}
+storms
+filter(storms,wind>60)
+filter(storms,wind>35 | pressure>1010)
+
+```
+We can combine columns on which we want to filter, by separating them with commas. R will treat the comma as a logical AND. If you want to use OR, then you need a | (pipe) to do that
+```{r}
+storms
+filter(storms,wind>35 , pressure>1010)
+```
+Read the above filter line as Filter Storms and show me all rows where wind>50 OR pressure >1010
+
+When we use DPLYR we can 'chain' together our commands instead of having to nest them. The operator we use to do this is %>%  If you are familiar with *nix this is similar to the pipe command |
+If we want to select and filter, we can send the output of one to the input of another. This makes writing and following code much easier.
+
+In the `rates` data set, which contains tuberculosis rates, I want to see the name of the country and the year in which the rate was higher than 60.
+If you think of this in English
+`If rate is > 60 show me the name of the country and the year`
+```{r}
+rates
+filter(rates,rate>60) %>% select(country,year,rate)
+```
+Mutate() allows us to add new columns based on other columns/calculations. If we wanted to see how the rate changes from year-to-year, we can use mutate along with another function called lag(). Lag() looks 1 row behind the current row to get the value it needs. You can also use lead() to look 1 row ahead.
+We already have the rate, let's compare how much it changed to the year prior:
+```{r}
+rates
+temprates<-mutate(rates,"year_over_year" = rate - lag(rate))
+View(temprates)
+```
+
+```{r}
+rates
+mutate(rates,"year_over_year" = rate - lag(rate))
+```
+
+Note that the first row has NA for its value, this is because it's the first one and lag() can't go back 1 row for data.
+```{r}
+population
+```
+
+
+Summarise() let's us summarize our data by a large list of mathematical functions, here are a few:
+* min() max()
+* mean()
+* median()
+* sum()
+* var() sd()
+* first() last() nth()
+* n() n_distinct()
+All of these functions take a vector and reduce it to a single value (a scalar).
+Let's take a look. 
+What is the mean of pollution amount:
+```{r}
+pollution
+summarise(pollution,mean(amount))
+```
+
+Interesting, but it doesn't tell us much. We really need to be able to get the mean for each city.
+for each city, show the mean amount of pollution:
+```{r}
+group_by(pollution, city) %>% summarise(avg=mean(amount))
+```
+
+Any time you think "for each *thing*" you can use group_by(*thing*) so that you can do aggregations (summarise) 
+
+Arrange() is a handy one here because it will let you change the order in which your data is displayed. For the above statement:
+for each city, show the mean amount of pollution from highest to lowest:
+```{r}
+group_by(pollution, city) %>% summarise(avg=mean(amount)) %>% arrange(desc(avg))
+```
+If you want to sort descending, you can use desc() along with arrange: arrange(desc(avg))
+
+Let's look at a more complex dataset. The nutrition dataset comes from the USDA and has 8,463 foods with 28 variables.
+If you want to look at the structure of the data, use the str() function. Head() gives you the top 10 rows, and tail() gives you the bottom 10 rows:
+
+```{r}
+nutrition
+str(nutrition)
+head(nutrition)
+tail(nutrition)
+View(nutrition)
+```
+
+Let's get the mean calorie value from the data:
+```{r}
+summarise(nutrition,mean(calories,na.rm=TRUE))
+```
+
+Why are we not getting a value for the mean of calories? Let's check for missing values. We can use summary() for this. It will tell us the count of missing values for each column
+```{r}
+summary(nutrition$calories)
+```
+So we know that calories has 3,802 missing values and that's messing up our mean calculation. We can use na.rm=TRUE to tell mean() to remove any NAs that it finds.
+```{r}
+summarise(nutrition,mean(calories,na.rm=TRUE))
+```
+
+so, the mean calorie for 4,661 (8463-3802) foods is 200. let's look by food group. To help, let's start with a statement of what we want to see:
+for each food group, calculate the mean calories then display the food group and calories in descending order.
+```{r}
+group_by(nutrition,group) %>% summarise(avgcals=mean(calories,na.rm=TRUE)) %>% arrange(desc(avgcals))
+```
+```{r}
+# mean of calories for the entire dataset
+mean_calories <- mean(nutrition$calories, na.rm = TRUE)
+
+
+
+# the mean calories for each food group
+mean_calories_per_group <- nutrition %>%
+group_by(group) %>%
+summarise(mean_calories = mean(calories, na.rm = TRUE))
+
+
+# group with the highest mean calories
+highest_calories_group <- mean_calories_per_group %>%
+filter(mean_calories == max(mean_calories))
+
+
+# group with the lowest mean calories
+lowest_calories_group <- mean_calories_per_group %>%
+filter(mean_calories == min(mean_calories))
+
+
+# Output
+mean_calories
+
+```
+
+
+
